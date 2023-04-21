@@ -1,2 +1,2 @@
 # tab-scraper
-Jankiest tool to save images from browser tabs
+More Info coming soon..
