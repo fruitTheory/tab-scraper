@@ -4,7 +4,7 @@ Script for grabbing images from open tabs for those who have many tabs to gather
 There is a couple caveats to this as mentioned its super jank
  --Will need autohotkey installed
  --Click on window browser shortly after running
- --The autohotkey runs regardless of what window its on so let it run through tabs
+ --The ahk runs regardless of what window its on so let it run through tabs
  --Possible that not all errors get caught so if ahk keeps running can go to bottom right tray and manually stop
 
 Thats about it, definitely open to suggestions on a better workflow so please feel free to!
