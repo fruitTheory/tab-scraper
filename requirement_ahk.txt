@@ -1,0 +1,3 @@
+AutoHotkey version 1.1.36.02 to be installed here 
+
+C:\Program Files\AutoHotkey\v1.1.36.02\AutoHotkeyU64.exe
