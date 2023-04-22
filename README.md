@@ -3,11 +3,11 @@ Script for grabbing images from open tabs for those who have many tabs to gather
 
 There is a couple caveats to this as mentioned its super jank
  --Will need autohotkey installed
- --Click on window browser shortly after running script
- --It error catches 403 forbidden so dont use on sites that block
+ --Click on window browser shortly after running
+ --It will catch 403 forbidden so dont use on sites that block
  --The autohotkey runs regardless of what window its on so have to let it run through all tabs to get each one
  --Possible that not all errors get caught so if ahk keeps running can go to bottom right tray and manually stop
 
-Thats about it, definitely open to suggestions on a better workflow so please feel free to
+Thats about it, definitely open to suggestions on a better workflow so please feel free to!
 
 
