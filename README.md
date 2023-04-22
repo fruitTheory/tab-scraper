@@ -1,5 +1,5 @@
 # tab-scraper
-Script for grabbing images from open tabs for those who have to open many tabs to gather photo reference and such. For now it just works with microsoft edge but could be extended if requested. After starting the python script click on a browser with all tabs open and it will run through each window. If the window has an extension like .jpg or .png it was save that file to disk and continue looping until all tabs have been saved in which it will stop both ahk and py scripts.
+Script for grabbing images from open tabs for those who have many tabs open to gather photo reference. For now it just works with microsoft edge but could be extended if requested. After starting the python script click on a browser with all tabs open and it will run through each window. If the window has an extension like .jpg or .png it will save that file to disk and continue looping until all tabs have been saved in which it will stop both ahk and py scripts.
 
 There is a couple caveats to this as mentioned its super jank
  --Will need autohotkey installed
