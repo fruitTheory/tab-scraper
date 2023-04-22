@@ -12,7 +12,7 @@ print("Script is running please wait until finished... ")
 
 # Popen allows other events to occur while the process is running
 process = subprocess.Popen([r'C:\Program Files\AutoHotkey\v1.1.36.02\AutoHotkeyU64.exe',
-                            r'C:\Programming\Python\projects\image_scraper\tab_script.ahk'])
+                            r'tab_script.ahk'])
 
 # Containers
 tab_list = []
