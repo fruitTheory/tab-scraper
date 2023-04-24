@@ -5,6 +5,7 @@ import time
 import re
 import logging
 import os
+from win32gui import GetWindowText, GetForegroundWindow
 
 # This is used to get the current time, and then use it as the file name for the log file
 now = time.strftime("%Y-%m-%d %H-%M-%S")
@@ -36,67 +37,88 @@ def get_open_tabs():
     if edge_windows:
         edge_window = edge_windows[0]
         edge_window.activate()
-
         # Wait for the window to be activated
         time.sleep(0.3)
-
-        # Try to connect to the window
-        try:
-            app = pywinauto.Application(backend='uia').connect(title_re='.*Microsoft.*Edge.*')
-
-        # If there are multiple windows open, print an error message and stop the program
-        except pywinauto.findwindows.ElementAmbiguousError:
-            print("Multiple Microsoft Edge windows are open. Please have only one window open.")
-            # Stop the program
-            return
         
-        dlg = app.top_window()
-
-        # Get the toolbar containing the address bar
-        wrapper = dlg.child_window(title='App bar', control_type='ToolBar')
-
-        #* Get the number of tabs, really janky way of doing it, but surprisingly it works
-        # Try to get the number of tabs
+        # check if the window is active
+        fg_window = GetWindowText(GetForegroundWindow())
+        # I believe split by word/space
+        split_name = fg_window.split()
+        # Gets last two words in list and concatenates
         try:
-            arr = str(app.windows()).split("'")[1].split("and")[1]
-            tabs = find_numbers_in_string(str(arr))[0] + 1
-        # If there is an IndexError, then there is only one tab, so set tabs to 1
+            window_name = split_name[-2]+split_name[-1]
         except IndexError:
-            tabs = 1
-        
-        index = 1
-        for i in range(tabs):
+            window_name = ""
+            pass
+        # If window name has Microsoft Edge in it call it a hit
+        edge_name = 'Microsoft Edge'
+        if "Microsoft" and "Edge" in window_name:
+            edge_selected = True
+        else:
+            edge_selected = False
+
+        while edge_selected:
+            # Try to connect to the window
+            try:
+                app = pywinauto.Application(backend='uia').connect(title_re='.*Microsoft.*Edge.*')
+
+            # If there are multiple windows open, print an error message and stop the program
+            except pywinauto.findwindows.ElementAmbiguousError:
+                print("Multiple Microsoft Edge windows are open. Please have only one window open.")
+                # Stop the program
+                return
             
-            print(f"Tab: {index}")
-            # Gets the edit box for the url
-            url = wrapper.descendants(control_type='Edit')[0]
-            # Gets value of url edit box
-            url_name = url.get_value()
+            dlg = app.top_window()
 
-            # Append url to list of urls, to be used to download the images later
-            open_tabs.append(url_name)
-            print(f"URL: {url_name}")
+            # Get the toolbar containing the address bar
+            wrapper = dlg.child_window(title='App bar', control_type='ToolBar')
 
-            # Press Ctrl+Tab to switch to the next tab
-            dlg.type_keys('^({TAB})')
-            time.sleep(0.1)
-            index += 1
-        tab_index = 1
-        for tab in open_tabs:
-            # Get the image, and set the user agent, this is to avoid getting a 403 error, some websites block requests coming outside of a browser, so we need to set the user agent to a browser
-            request = requests.get(tab, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}).content
+            #* Get the number of tabs, really janky way of doing it, but surprisingly it works
+            # Try to get the number of tabs
+            try:
+                arr = str(app.windows()).split("'")[1].split("and")[1]
+                tabs = find_numbers_in_string(str(arr))[0] + 1
+            # If there is an IndexError, then there is only one tab, so set tabs to 1
+            except IndexError:
+                tabs = 1
+            
+            index = 1
+            for i in range(tabs):
+                
+                print(f"Tab: {index}")
+                # Gets the edit box for the url
+                url = wrapper.descendants(control_type='Edit')[0]
+                # Gets value of url edit box
+                url_name = url.get_value()
 
-            #* The code below was used to remove special characters from the tab name, and then use it as the file name, but the file name was ugly, so I used the tab index instead
-            # tab = str(tab).split("/")[-1]
-            # tab = re.sub(r'\W+', '_', tab)[:200]
+                # Append url to list of urls, to be used to download the images later
+                open_tabs.append(url_name)
+                print(f"URL: {url_name}")
 
-            # save the image to the images folder
-            #? For now, all images are saved as png, not really a problem, but could be fixed later if needed
-            #? Maybe try to get the file extension from the url, and then save it as that file extension, should be easy enough
-            with open(f"images/{tab_index}.png", "wb") as file:
-                file.write(request)
-            logging.error(f"Image {tab_index}.png saved from url - {tab}")
-            tab_index += 1
+                # Press Ctrl+Tab to switch to the next tab
+                dlg.type_keys('^({TAB})')
+                time.sleep(0.1)
+                index += 1
+            tab_index = 1
+            for tab in open_tabs:
+                # Get the image, and set the user agent, this is to avoid getting a 403 error, some websites block requests coming outside of a browser, so we need to set the user agent to a browser
+                request = requests.get(tab, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}).content
+
+                #* The code below was used to remove special characters from the tab name, and then use it as the file name, but the file name was ugly, so I used the tab index instead
+                # tab = str(tab).split("/")[-1]
+                # tab = re.sub(r'\W+', '_', tab)[:200]
+
+                # save the image to the images folder
+                #? For now, all images are saved as png, not really a problem, but could be fixed later if needed
+                #? Maybe try to get the file extension from the url, and then save it as that file extension, should be easy enough
+                with open(f"images/{tab_index}.png", "wb") as file:
+                    file.write(request)
+                logging.error(f"Image {tab_index}.png saved from url - {tab}")
+                tab_index += 1
+                if tab_index > len(open_tabs):
+                    print("Done!")
+                    return
+            
     # If the window is not found, print an error message
     else:
         print("Microsoft Edge is not running.")
