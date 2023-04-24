@@ -1,7 +1,6 @@
 import time
 import pywinauto
 import urllib.request
-import subprocess
 from urllib.parse import urlparse
 from os.path import splitext
 import logging
@@ -14,10 +13,9 @@ logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.DEBUG,
 
 print("Script is running please wait until finished... ")
 
-# Containers
+# Global Containers
 tab_list = []
 tab_count = 0
-
 limit_reached = False
 
 # While limit reached is not true continue program
@@ -40,12 +38,8 @@ while not limit_reached:
         print("Not selected!")
         edge_selected = False
 
-
-
-    while(edge_selected):
-
-        print("Hey its me")
-
+    while edge_selected:
+        # This starts browser commands since Microsoft Edge is active
         # Object constructor
         app = pywinauto.Application(backend='uia')
 
@@ -72,34 +66,31 @@ while not limit_reached:
 
         # If our list of items starts having duplicates we end flow
         if tab_list.count(url_name) > 1:
-            # process.kill()
-            print("Reached tab limit")
+            logging.debug("Reached maximum tab limit")
+            print("Reached maximum tab limit")
+            # This kills process
             limit_reached = True
-            break
 
-        # Logging tab names and how many
-        logging.debug(tab_list)
-        logging.debug("Number of items = " + str(len(tab_list)))
+        logging.debug("URLs =" + str(tab_list))
+        logging.debug("Number of URLs = " + str(len(tab_list)))
         # print(tab_list)
 
-        # # if there is an extension available consider it writable
-        # if ext:
-        #     tab_count += 1
-        #     # Write binary mode wb -- opening binary file writing img to it and closing
-        #     f = open(str(tab_count)+ext, 'wb')
-        #     # Try except to catch forbidden errors
-        #     try:
-        #         # Try requesting open url and writing the return to a binary file
-        #         request = urllib.request.urlopen(url_name).read()
-        #         f.write(request)
-        #         f.close()
-        #         print("finished")
-        #     except urllib.error.HTTPError as forbid:
-        #         if forbid.code == 403:
-        #             logging.error("HTTP Error 403 Forbidden")
-        #             print("403 junk")
-        #             #process.kill()
-        #             break
+        # if there is an extension available consider it writable
+        if ext:
+            tab_count += 1
+            # Write binary mode wb -- opening binary file writing img to it and closing
+            f = open(str(tab_count)+ext, 'wb')
+            # Try except to catch forbidden errors
+            try:
+                # Try requesting open url and writing the return to a binary file
+                request = urllib.request.urlopen(url_name).read()
+                f.write(request)
+                f.close()
+                logging.debug(str(tab_count)+ext + " Written to Disk\n")
+            except urllib.error.HTTPError as forbid:
+                if forbid.code == 403:
+                    logging.error("HTTP Error 403 Forbidden")
+                    print("403 junk")
 
         # Simulate keyboard shortcut
         pyautogui.hotkey('ctrl', 'tab')
