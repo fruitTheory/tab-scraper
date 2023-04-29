@@ -1,0 +1,13 @@
+Instructions -- How to install on isolated environment without an IDE
+
+--Using Powershell--
+
+
+git clone https://github.com/fruitTheory/tab-scraper.git  | clones repo to disk
+
+cd tab-scraper
+
+
+./install.ps1  | to install all required packages in a virtual environment
+
+python tab_scraper.py  | to start script
