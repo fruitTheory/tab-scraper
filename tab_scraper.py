@@ -50,7 +50,6 @@ def delete():
 
     
 def save(tab_index):
-    # for i in range(tab_list):
     for tab in tab_list:
         # Get the image, and set the user agent, this is to avoid getting a 403 error,
         # some websites block requests coming outside a browser, so we need to set the user agent to a browser
@@ -68,26 +67,26 @@ def save(tab_index):
     print("Complete!")
 
 def check():
-    # Define app
+    # Start connection to edge
     app = pywinauto.Application(backend='uia').connect(title_re='.*Microsoft​ Edge.*', found_index=0)
     # Try to get the number of tabs
     try:
-        # Splits info returned  that states a number of additional tabs open
+        # Splits the app window info at where it states the number of additional tabs open
         arr = str(app.windows()).split("'")[1].split("and")[1]
         # Extracts the number from this and adds 1 to account for active tab
         tabs = find_numbers_in_string(str(arr))[0] + 1
-        print("found " + str(tabs) + " active tabs")
+        print("Found " + str(tabs) + " active tabs")
     # If there is an IndexError, then there is only one tab, so set tabs to 1
     except IndexError:
         tabs = 1
 
+    # Get info from forefround window
     fg_window = GetWindowText(GetForegroundWindow())
-    # I believe split by word/space
+    # Split by word/space
     split_name = fg_window.split()
     # Gets last two words in list and concatenates
     window_name = split_name[-2] + split_name[-1]
 
-    edge_name = 'Microsoft Edge'
     if "Microsoft" and "Edge" in window_name:
         print("Edge selected!")
         print("Please wait..")
@@ -97,23 +96,15 @@ def check():
         edge_selected = False
 
     if edge_selected:
-        # print("gets here")
-        # While limit reached is not true continue program
+        # Loop through tab amount
         for i in range(tabs):
-            # Grab the current window
-            fg_window = GetWindowText(GetForegroundWindow())
-            # I believe split by word/space
-            split_name = fg_window.split()
-            # Gets last two words in list and concatenates
-            window_name = split_name[-2]+split_name[-1]
-
+            # Pull top window
             dlg = app.top_window()
 
-            # Get the toolbar containing the address bar
+            # Get toolbar containing the address bar
             wrapper = dlg.child_window(title='App bar', control_type='ToolBar')
 
-            # Store reference to child window and descendants are the controls contain in window
-            # Returns list of all editable control types guessing [0] represents url edit box
+            # Returns list of all editable control types [0] represents url edit box
             url = wrapper.descendants(control_type='Edit')[0]
             # Gets value of url edit box
             url_name = url.get_value()
