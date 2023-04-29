@@ -1,99 +1,139 @@
+import os
+import re
 import time
-import pywinauto
-import urllib.request
-from urllib.parse import urlparse
-from os.path import splitext
 import logging
+
+import pywinauto
 import pyautogui
+import requests
+import send2trash
+
+from PIL import Image
 from win32gui import GetWindowText, GetForegroundWindow
 
 
 # Basic logging writes new file each log
-logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.DEBUG, filemode='w')
+logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.ERROR, filemode='w')
 
+# Let user know its running
 print("Script is running please wait until finished... ")
+
+# Make image directory
+if not os.path.exists('images'):
+    os.makedirs('images')
+image_dir = 'images/'
 
 # Global Containers
 tab_list = []
-tab_count = 0
-limit_reached = False
 
-# While limit reached is not true continue program
-while not limit_reached:
-    # This delay matters, else the script will go out of range
-    time.sleep(.25)
-    # Grab the current window
+#* Find all numbers in a string, and return them as a list of floats or ints,
+def find_numbers_in_string(input_string):
+    # find float point
+    numbers = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', input_string)
+    # find just int
+    #numbers = re.findall(r'\d+', input_string)
+    return [float(num) if '.' in num else int(num) for num in numbers]
+
+def delete():
+
+    images_path = os.listdir(image_dir)
+    for image in images_path:
+        file_path = image_dir + image
+
+        try:
+            # Try seeing if file will open what PIL considers an image
+            Image.open(file_path)
+        except:
+            # If error raised from PIL then send non image file to trash
+            logging.error("Deleted " + file_path)
+            send2trash.send2trash(file_path)
+
+    
+def save(tab_index):
+    # for i in range(tab_list):
+    for tab in tab_list:
+        # Get the image, and set the user agent, this is to avoid getting a 403 error,
+        # some websites block requests coming outside a browser, so we need to set the user agent to a browser
+        request = requests.get(tab, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/91.0.4472.124 Safari/537.36'}).content
+        # Write the files
+        with open(f"images/{tab_index}.png", "wb") as file:
+            file.write(request)
+        logging.error(f"Image {tab_index}.png saved from url - {tab}")
+        tab_index += 1
+
+    delete()
+    print("")
+    print("Complete!")
+
+def check():
+    # Define app
+    app = pywinauto.Application(backend='uia').connect(title_re='.*Microsoft​ Edge.*', found_index=0)
+    # Try to get the number of tabs
+    try:
+        # Splits info returned  that states a number of additional tabs open
+        arr = str(app.windows()).split("'")[1].split("and")[1]
+        # Extracts the number from this and adds 1 to account for active tab
+        tabs = find_numbers_in_string(str(arr))[0] + 1
+        print("found " + str(tabs) + " active tabs")
+    # If there is an IndexError, then there is only one tab, so set tabs to 1
+    except IndexError:
+        tabs = 1
+
     fg_window = GetWindowText(GetForegroundWindow())
     # I believe split by word/space
     split_name = fg_window.split()
     # Gets last two words in list and concatenates
-    window_name = split_name[-2]+split_name[-1]
+    window_name = split_name[-2] + split_name[-1]
 
-    # If window name has Microsoft Edge in it call it a hit
     edge_name = 'Microsoft Edge'
     if "Microsoft" and "Edge" in window_name:
         print("Edge selected!")
+        print("Please wait..")
         edge_selected = True
     else:
-        print("Not selected!")
+        # print("Not selected!")
         edge_selected = False
 
-    while edge_selected:
-        # This starts browser commands since Microsoft Edge is active
-        # Object constructor
-        app = pywinauto.Application(backend='uia')
+    if edge_selected:
+        # print("gets here")
+        # While limit reached is not true continue program
+        for i in range(tabs):
+            # Grab the current window
+            fg_window = GetWindowText(GetForegroundWindow())
+            # I believe split by word/space
+            split_name = fg_window.split()
+            # Gets last two words in list and concatenates
+            window_name = split_name[-2]+split_name[-1]
 
-        # Connects to any application named Microsoft Edge
-        app.connect(title_re='.*Microsoft​ Edge.*', found_index=0)
-        dlg = app.top_window()
+            dlg = app.top_window()
 
-        # Get the toolbar containing the address bar
-        wrapper = dlg.child_window(title='App bar', control_type='ToolBar')
+            # Get the toolbar containing the address bar
+            wrapper = dlg.child_window(title='App bar', control_type='ToolBar')
 
-        # Store reference to child window and descendants are the controls contain in window
-        # Returns list of all editable control types guessing [0] represents url edit box
-        url = wrapper.descendants(control_type='Edit')[0]
-        # Gets value of url edit box
-        url_name = url.get_value()
+            # Store reference to child window and descendants are the controls contain in window
+            # Returns list of all editable control types guessing [0] represents url edit box
+            url = wrapper.descendants(control_type='Edit')[0]
+            # Gets value of url edit box
+            url_name = url.get_value()
 
-        # Append url to list of urls
-        tab_list.append(url_name)
+            tab_list.append(url_name)
 
-        # This parses through url, and we choose to return 'path' in order to split extension
-        parsed_url = urlparse(url_name)
-        url_path = parsed_url.path
-        root, ext = splitext(str(url_path))
+            # Temp extra guard for tab list
+            if not tab_list.count(url_name) > 1:
+                # Simulate keyboard shortcut
+                pyautogui.hotkey('ctrl', 'tab')
+        # Call save pass index 0
+        save(0)
 
-        # If our list of items starts having duplicates we end flow
-        if tab_list.count(url_name) > 1:
-            logging.debug("Reached maximum tab limit")
-            print("Reached maximum tab limit")
-            # This kills process
-            limit_reached = True
+    elif not edge_selected:
+        print("Please select an instance of Microsoft Edge\n")
+        # The delay matters, else the script will go out of range
+        time.sleep(2)
+        # Another manual loop
+        check()
 
-        logging.debug("URLs =" + str(tab_list))
-        logging.debug("Number of URLs = " + str(len(tab_list)))
-        # print(tab_list)
 
-        # if there is an extension available consider it writable
-        if ext:
-            tab_count += 1
-            # Write binary mode wb -- opening binary file writing img to it and closing
-            f = open(str(tab_count)+ext, 'wb')
-            # Try except to catch forbidden errors
-            try:
-                # Try requesting open url and writing the return to a binary file
-                request = urllib.request.urlopen(url_name).read()
-                f.write(request)
-                f.close()
-                logging.debug(str(tab_count)+ext + " Written to Disk\n")
-            except urllib.error.HTTPError as forbid:
-                if forbid.code == 403:
-                    logging.error("HTTP Error 403 Forbidden")
-                    print("403 junk")
-
-        # Simulate keyboard shortcut
-        pyautogui.hotkey('ctrl', 'tab')
-
-        # Break needed at end of this basically as a reset
-        break
+# Basically a manual loop
+check()
