@@ -2,7 +2,10 @@ import os
 import re
 import time
 import logging
+from os.path import splitext
+from urllib.parse import urlparse
 
+import PIL
 import pywinauto
 import pyautogui
 import requests
@@ -25,6 +28,8 @@ image_dir = 'images/'
 
 # Global Containers
 tab_list = []
+url_root_list = []
+url_ext_list = []
 
 #* Find all numbers in a string, and return them as a list of floats or ints,
 def find_numbers_in_string(input_string):
@@ -35,20 +40,22 @@ def find_numbers_in_string(input_string):
     return [float(num) if '.' in num else int(num) for num in numbers]
 
 def delete():
-
+    # List directory of our created images folder
     images_path = os.listdir(image_dir)
     for image in images_path:
         file_path = image_dir + image
-
         try:
             # Try seeing if file will open what PIL considers an image
             Image.open(file_path)
-        except:
+        except PIL.UnidentifiedImageError:
             # If error raised from PIL then send non image file to trash
             logging.error("Deleted " + file_path)
             send2trash.send2trash(file_path)
+        except PermissionError:
+            # A specific exception for folder permissions, also saves folder from being deleted
+            logging.error("Folder Permission Error: ")
 
-    
+
 def save(tab_index):
     for tab in tab_list:
         # Get the image, and set the user agent, this is to avoid getting a 403 error,
@@ -56,11 +63,28 @@ def save(tab_index):
         request = requests.get(tab, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/91.0.4472.124 Safari/537.36'}).content
-        # Write the files
-        with open(f"images/{tab_index}.png", "wb") as file:
-            file.write(request)
-        logging.error(f"Image {tab_index}.png saved from url - {tab}")
-        tab_index += 1
+
+        # From the list of url roots grab [x] index
+        root_name = url_root_list[tab_index]
+        # Split the url text by /
+        split_name = root_name.split('/')
+        # Grab last one in list
+        saved_name = split_name[-1]
+        # Grab from list of saved url extensions
+        saved_ext = url_ext_list[tab_index]
+
+        try:
+            # Write the files
+            with open(f"images/{saved_name}{saved_ext}", "wb") as file:
+                file.write(request)
+            logging.error(f"Image {saved_name}{saved_ext} saved from url - {tab}")
+            tab_index += 1
+        except PermissionError:
+            # This exception is needed to catch bad or empty urls
+            with open(f"images/null_file", "wb") as file:
+                file.write(request)
+            logging.error(f"Image null_file saved from url - {tab}")
+            tab_index += 1
 
     delete()
     print("")
@@ -110,6 +134,13 @@ def check():
             url_name = url.get_value()
 
             tab_list.append(url_name)
+
+            # This parses through url, and we choose to return 'path' in order to split extension
+            parsed_url = urlparse(url_name)
+            url_path = parsed_url.path
+            root, ext = splitext(str(url_path))
+            url_root_list.append(root)
+            url_ext_list.append(ext)
 
             # Temp extra guard for tab list
             if not tab_list.count(url_name) > 1:
