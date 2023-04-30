@@ -61,6 +61,7 @@ def save():
         # some websites block requests coming outside of a browser, so we need to set the user agent to a browser
         try:
          request = requests.get(tab, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}).content
+        # If the url is bad, or empty, then skip it
         except requests.exceptions.MissingSchema:
             continue
          # From the list of url roots grab [x] index
