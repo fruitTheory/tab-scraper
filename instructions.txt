@@ -1,0 +1,7 @@
+Instructions -- How to install an isolated environment without an IDE
+
+--Update--
+
+Now can just run the "install.bat" batch file found in repository
+
+then type python tab_scraper.py
