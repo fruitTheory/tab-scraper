@@ -1,5 +1,6 @@
+Pillow==9.5.0
 PyGetWindow==0.0.9
 pywin32==304
 pywinauto==0.6.8
 requests==2.28.2
-win32gui==221.6
+Send2Trash==1.8.0
